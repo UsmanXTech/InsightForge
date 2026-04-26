@@ -22,7 +22,7 @@ export function Dashboard() {
 
   // AI Insights State
   const [isUploading, setIsUploading] = useState(false);
-  const [aiInsights, setAiInsights] = useState<{filename: string, rows: number, insights: string} | null>(null);
+  const [aiInsights, setAiInsights] = useState<{filename: string, rows: any, insights: string} | null>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,6 +49,24 @@ export function Dashboard() {
     } finally {
       setIsUploading(false);
       if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleAnalyzeDB = async () => {
+    setIsUploading(true);
+    try {
+      const res = await fetch('/api/insights/analyze-db');
+      const data = await res.json();
+      if (res.ok) {
+        setAiInsights(data);
+      } else {
+        alert("AI DB Analysis Failed: " + data.detail);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error during DB analysis.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -435,11 +453,15 @@ export function Dashboard() {
                 <LayoutTemplate className="h-3 w-3 mr-2 text-primary" /> Edit Layout
               </Button>
               
-              <div className="relative border-l border-border pl-2 ml-1">
+              <div className="relative border-l border-border pl-2 ml-1 flex gap-2">
                  <input type="file" id="csv-upload" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
                  <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground border-primary/20" onClick={() => document.getElementById('csv-upload')?.click()} disabled={isUploading}>
                    {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UploadCloud className="h-4 w-4 mr-2" />}
-                   {isUploading ? 'Analyzing...' : 'AI Insights'}
+                   CSV Insights
+                 </Button>
+                 <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-500 hover:bg-purple-500 hover:text-white border-purple-500/20" onClick={handleAnalyzeDB} disabled={isUploading}>
+                   {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                   Analyze Live DB
                  </Button>
               </div>
             </div>

@@ -18,3 +18,17 @@ class UserRecord(BaseModel):
     status: str
     department: str
     lastLogin: str
+
+class AlertSchema(BaseModel):
+    title: str
+    desc: str
+    time: str
+    type: str
+
+class SettingSchema(BaseModel):
+    key: str
+    value: str
+    enabled: bool
+
+class ChatRequest(BaseModel):
+    query: str

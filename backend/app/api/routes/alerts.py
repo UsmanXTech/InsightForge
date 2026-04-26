@@ -1,13 +1,12 @@
-from fastapi import APIRouter
-from typing import List, Dict
+from fastapi import APIRouter, Depends
+from typing import List
+from sqlalchemy.orm import Session
+from app.db.database import get_db
+from app.schemas.data import AlertSchema
+from app.services import db_service
 
 router = APIRouter()
 
-@router.get("/")
-def get_alerts() -> List[Dict]:
-    return [
-        { "title": "Database Optimization Complete", "desc": "PostgreSQL indexes rebuilt automatically", "time": "Just now", "type": "success" },
-        { "title": "Memory Spike Detected", "desc": "Uvicorn worker PID 442 consuming >500MB", "time": "4 min ago", "type": "warn" },
-        { "title": "Daily Gemini Target Exceeded", "desc": "105% quota usage on API requests", "time": "1 hour ago", "type": "warn" },
-        { "title": "System Reboot Scheduled", "desc": "Cloud Run container rolling restart at 0200", "time": "4 hours ago", "type": "success" }
-    ]
+@router.get("/", response_model=List[AlertSchema])
+def get_alerts(db: Session = Depends(get_db)):
+    return db_service.get_alerts(db)

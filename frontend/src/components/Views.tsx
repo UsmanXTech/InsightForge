@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Activity, BellRing, Settings as SettingsIcon, TableProperties, CheckCircle2, Download } from "lucide-react";
+import { Activity, BellRing, Settings as SettingsIcon, TableProperties, CheckCircle2, Download, MessageSquare, Send, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
 
 export function DataExplorer() {
   const [activeDataset, setActiveDataset] = useState<'users' | 'sales' | 'projects'>('users');
   const [dataset, setDataset] = useState<any[]>([]);
+  
+  const [chatQuery, setChatQuery] = useState("");
+  const [chatResponse, setChatResponse] = useState<string | null>(null);
+  const [isChatting, setIsChatting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/${activeDataset}`)
@@ -14,6 +19,32 @@ export function DataExplorer() {
       .catch(console.error);
   }, [activeDataset]);
 
+  const handleAskAI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatQuery.trim()) return;
+    setIsChatting(true);
+    setChatResponse(null);
+    try {
+      const res = await fetch('/api/insights/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: chatQuery })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setChatResponse(data.answer);
+      } else {
+        setChatResponse(`Error: ${data.detail}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setChatResponse("Failed to communicate with AI.");
+    } finally {
+      setIsChatting(false);
+      setChatQuery("");
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col justify-between gap-6 bg-card/30 p-6 rounded-xl border border-border">
@@ -21,19 +52,51 @@ export function DataExplorer() {
           <h1 className="text-4xl font-serif font-light text-foreground">Data Explorer</h1>
           <p className="text-sm text-muted-foreground italic mt-2">Filter and inspect backend tables locally.</p>
         </div>
-        <div className="flex gap-2">
-          {['users', 'sales', 'projects'].map((tab) => (
-            <Button
-              key={tab}
-              variant={activeDataset === tab ? 'default' : 'outline'}
-              className="text-xs uppercase tracking-widest font-bold h-8"
-              onClick={() => setActiveDataset(tab as any)}
-            >
-              {tab}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex gap-2">
+            {['users', 'sales', 'projects'].map((tab) => (
+              <Button
+                key={tab}
+                variant={activeDataset === tab ? 'default' : 'outline'}
+                className="text-xs uppercase tracking-widest font-bold h-8"
+                onClick={() => setActiveDataset(tab as any)}
+              >
+                {tab}
+              </Button>
+            ))}
+          </div>
+          
+          <form onSubmit={handleAskAI} className="flex flex-1 sm:flex-none items-center gap-2 min-w-[280px]">
+            <div className="relative flex-1">
+              <MessageSquare className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Ask AI about this data..." 
+                className="pl-9 h-9 text-xs bg-background/50 border-primary/20 focus-visible:ring-primary w-full"
+                value={chatQuery}
+                onChange={e => setChatQuery(e.target.value)}
+                disabled={isChatting}
+              />
+            </div>
+            <Button type="submit" size="icon" className="h-9 w-9 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground border border-primary/20" disabled={isChatting || !chatQuery.trim()}>
+              {isChatting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
-          ))}
+          </form>
         </div>
       </div>
+      
+      {chatResponse && (
+        <Card className="border-primary/30 shadow-md shadow-primary/5 bg-primary/5 animate-in slide-in-from-top-4 fade-in duration-300">
+          <CardContent className="p-4 flex gap-3">
+            <MessageSquare className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 leading-relaxed font-medium">
+               {chatResponse.split('\\n').map((line, i) => (
+                  <p key={i} className="mb-1">{line}</p>
+               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="overflow-x-auto">
         <CardContent className="p-0">
           <table className="w-full text-sm text-left">
@@ -173,6 +236,26 @@ export function Alerts() {
 }
 
 export function Settings() {
+  const [settings, setSettings] = useState<{key: string, value: string, enabled: boolean}[]>([]);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(setSettings)
+      .catch(console.error);
+  }, []);
+
+  const toggleSetting = async (key: str, current: boolean) => {
+    try {
+      const res = await fetch(`/api/settings/${key}?enabled=${!current}`, { method: 'PUT' });
+      if (res.ok) {
+        setSettings(prev => prev.map(s => s.key === key ? { ...s, enabled: !current } : s));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col justify-between gap-6 bg-card/30 p-6 rounded-xl border border-border">
@@ -183,25 +266,23 @@ export function Settings() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Account Configuration <span className="opacity-50 font-normal italic ml-2">Read-only demo</span></CardTitle>
+          <CardTitle>Account Configuration <span className="opacity-50 font-normal italic ml-2">Live Sync</span></CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex justify-between items-center py-2 border-b border-border">
-             <div>
-               <h4 className="font-bold text-sm">Two-Factor Authentication</h4>
-             </div>
-             <div className="w-10 h-5 bg-primary/20 rounded-full relative cursor-not-allowed">
-               <div className="w-4 h-4 bg-primary rounded-full absolute left-1 top-0.5" />
-             </div>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-border">
-             <div>
-               <h4 className="font-bold text-sm">Automated Analytics Aggregation</h4>
-             </div>
-             <div className="w-10 h-5 bg-muted rounded-full relative cursor-not-allowed">
-               <div className="w-4 h-4 bg-muted-foreground rounded-full absolute left-1 top-0.5" />
-             </div>
-          </div>
+          {settings.map(s => (
+            <div key={s.key} className="flex justify-between items-center py-2 border-b border-border">
+               <div>
+                 <h4 className="font-bold text-sm capitalize">{s.key.replace('_', ' ')}</h4>
+               </div>
+               <div 
+                 className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${s.enabled ? 'bg-primary' : 'bg-muted'}`}
+                 onClick={() => toggleSetting(s.key, s.enabled)}
+               >
+                 <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${s.enabled ? 'left-5' : 'left-1'}`} />
+               </div>
+            </div>
+          ))}
+          {settings.length === 0 && <div className="text-center text-muted-foreground py-4">Loading settings...</div>}
         </CardContent>
       </Card>
     </div>
