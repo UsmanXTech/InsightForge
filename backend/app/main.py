@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.routes import auth, sales, projects, users, insights, alerts, settings
+from app.api.routes import auth, sales, projects, users, insights, alerts, settings as settings_route
 
 from app.db.database import engine, Base
 from app.models import domain
@@ -26,4 +26,4 @@ app.include_router(projects.router, prefix=f"{settings.API_V1_STR}/projects", ta
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 app.include_router(insights.router, prefix=f"{settings.API_V1_STR}/insights", tags=["insights"])
 app.include_router(alerts.router, prefix=f"{settings.API_V1_STR}/alerts", tags=["alerts"])
-app.include_router(settings.router, prefix=f"{settings.API_V1_STR}/settings", tags=["settings"])
+app.include_router(settings_route.router, prefix=f"{settings.API_V1_STR}/settings", tags=["settings"])
