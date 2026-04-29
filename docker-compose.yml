@@ -32,6 +32,7 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://admin:admin@db:5432/insightforge
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     depends_on:
       db:

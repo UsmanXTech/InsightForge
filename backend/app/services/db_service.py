@@ -1,9 +1,25 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List
+import hashlib
+import secrets
+from datetime import datetime
 
-from app.models.domain import User, Sale, Project, Alert, Setting
+from app.models.domain import User, UserCredential, Sale, Project, Alert, Setting
 from app.schemas.auth import LoginRequest, RegisterRequest
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000).hex()
+    return f"{salt}${digest}"
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    try:
+        salt, digest = stored_hash.split("$", 1)
+    except ValueError:
+        return False
+    candidate = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000).hex()
+    return secrets.compare_digest(candidate, digest)
 
 def get_sales(db: Session):
     sales = db.query(Sale).all()
@@ -38,7 +54,19 @@ def get_projects(db: Session):
     return projects
 
 def get_users(db: Session):
-    return db.query(User).all()
+    users = db.query(User).all()
+    return [
+        {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "status": user.status,
+            "department": user.department,
+            "lastLogin": user.last_login
+        }
+        for user in users
+    ]
 
 def get_alerts(db: Session):
     alerts = db.query(Alert).all()
@@ -94,16 +122,35 @@ def approve_user(db: Session, user_id: str):
         user.status = "Active"
         db.commit()
         db.refresh(user)
-    return user
+    if not user:
+        return None
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "status": user.status,
+        "department": user.department,
+        "lastLogin": user.last_login
+    }
 
 def login_user(db: Session, req: LoginRequest):
     user = db.query(User).filter(User.email == req.email).first()
-    if not user:
+    credential = db.query(UserCredential).filter(UserCredential.email == req.email).first()
+    if not user or not credential:
         return None
-    # For a real app, hash and check passwords. This is a mockup!
+    if not verify_password(req.password, credential.password_hash):
+        return None
+    user.last_login = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    db.commit()
+    db.refresh(user)
     return user
 
 def register_user(db: Session, req: RegisterRequest):
+    existing_user = db.query(User).filter(User.email == req.email).first()
+    if existing_user:
+        return None
+
     new_user = User(
         id=f"USR-{hash(req.email) % 10000}",
         name=req.name,
@@ -113,7 +160,12 @@ def register_user(db: Session, req: RegisterRequest):
         department="Unassigned",
         last_login="Never"
     )
+    credential = UserCredential(
+        email=req.email,
+        password_hash=hash_password(req.password)
+    )
     db.add(new_user)
+    db.add(credential)
     db.commit()
     db.refresh(new_user)
     return new_user

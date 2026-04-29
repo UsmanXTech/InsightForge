@@ -13,6 +13,12 @@ class User(Base):
     department = Column(String(100))
     last_login = Column(String(50))
 
+class UserCredential(Base):
+    __tablename__ = "user_credentials"
+
+    email = Column(String(255), primary_key=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+
 class Sale(Base):
     __tablename__ = "sales"
 

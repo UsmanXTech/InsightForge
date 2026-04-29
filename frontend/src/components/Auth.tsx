@@ -5,7 +5,7 @@ import { Input } from '@/src/components/ui/Input';
 import { BarChart3, Mail, Lock, User, ArrowRight } from 'lucide-react';
 
 interface AuthProps {
-  onLogin: () => void;
+  onLogin: (token: string) => void;
 }
 
 export function Auth({ onLogin }: AuthProps) {
@@ -27,11 +27,12 @@ export function Auth({ onLogin }: AuthProps) {
           ...("name" in data && { name: data.name })
         })
       });
+      const payload = await res.json();
 
       if (res.ok) {
-        onLogin();
+        onLogin(payload.token);
       } else {
-        alert("Authentication failed");
+        alert(payload.detail || "Authentication failed");
       }
     } catch (err) {
       console.error(err);
@@ -65,6 +66,7 @@ export function Auth({ onLogin }: AuthProps) {
                   <div className="relative">
                     <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
+                      name="name"
                       placeholder="John Doe" 
                       className="pl-10 bg-background/50 border-border h-10" 
                       required 
@@ -78,6 +80,7 @@ export function Auth({ onLogin }: AuthProps) {
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
+                    name="email"
                     type="email" 
                     placeholder="name@company.com" 
                     className="pl-10 bg-background/50 border-border h-10" 
@@ -98,6 +101,7 @@ export function Auth({ onLogin }: AuthProps) {
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
+                    name="password"
                     type="password" 
                     placeholder="••••••••" 
                     className="pl-10 bg-background/50 border-border h-10" 

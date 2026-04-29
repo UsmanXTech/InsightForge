@@ -3,6 +3,7 @@ import { Activity, BellRing, Settings as SettingsIcon, TableProperties, CheckCir
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
+import { apiFetch } from "@/src/lib/api";
 
 export function DataExplorer() {
   const [activeDataset, setActiveDataset] = useState<'users' | 'sales' | 'projects'>('users');
@@ -13,7 +14,7 @@ export function DataExplorer() {
   const [isChatting, setIsChatting] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/${activeDataset}`)
+    apiFetch(`/api/${activeDataset}`)
       .then(r => r.json())
       .then(setDataset)
       .catch(console.error);
@@ -25,7 +26,7 @@ export function DataExplorer() {
     setIsChatting(true);
     setChatResponse(null);
     try {
-      const res = await fetch('/api/insights/chat', {
+      const res = await apiFetch('/api/insights/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: chatQuery })
@@ -132,7 +133,7 @@ export function Reports() {
   const downloadReport = async (endpoint: string) => {
     try {
       setIsDownloading(endpoint);
-      const res = await fetch(`/api/${endpoint}`);
+      const res = await apiFetch(`/api/${endpoint}`);
       const data = await res.json();
       
       if (data && data.length > 0) {
@@ -201,7 +202,7 @@ export function Alerts() {
   const [alerts, setAlerts] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`/api/alerts`)
+    apiFetch(`/api/alerts`)
       .then(r => r.json())
       .then(setAlerts)
       .catch(console.error);
@@ -239,15 +240,15 @@ export function Settings() {
   const [settings, setSettings] = useState<{key: string, value: string, enabled: boolean}[]>([]);
 
   useEffect(() => {
-    fetch('/api/settings')
+    apiFetch('/api/settings')
       .then(r => r.json())
       .then(setSettings)
       .catch(console.error);
   }, []);
 
-  const toggleSetting = async (key: str, current: boolean) => {
+  const toggleSetting = async (key: string, current: boolean) => {
     try {
-      const res = await fetch(`/api/settings/${key}?enabled=${!current}`, { method: 'PUT' });
+      const res = await apiFetch(`/api/settings/${key}?enabled=${!current}`, { method: 'PUT' });
       if (res.ok) {
         setSettings(prev => prev.map(s => s.key === key ? { ...s, enabled: !current } : s));
       }

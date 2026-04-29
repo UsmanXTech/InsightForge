@@ -2,19 +2,29 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# InsightForge
 
-This contains everything you need to run your app locally.
+## Database
 
-View your app in AI Studio: https://ai.studio/apps/6cda72ed-f2fa-4be6-8160-13b138b0fa00
+InsightForge now uses PostgreSQL by default.
 
-## Run Locally
+- Default local URL: `postgresql://admin:admin@localhost:5432/insightforge`
+- Container URL (backend -> db): `postgresql://admin:admin@db:5432/insightforge`
 
-**Prerequisites:**  Node.js
+The database initialization script is:
+- [database/init.sql](/C:/Users/User/Desktop/InsightForge/database/init.sql)
 
+It creates base tables and seeds an initial admin account:
+- Email: `admin@insightforge.com`
+- Password: `admin123`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Run With Docker
+
+1. (Optional) Set env vars:
+   - `GEMINI_API_KEY`
+   - `SECRET_KEY` (recommended in non-dev usage)
+2. Start services:
+   - `docker compose up --build`
+3. Open:
+   - Frontend: `http://localhost`
+   - Backend API: `http://localhost:8000`

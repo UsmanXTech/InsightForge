@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 // Removal of mockData import
 import { Download, Filter, SlidersHorizontal, Users, DollarSign, TrendingUp, Activity, Search, GripVertical, LayoutTemplate, Save, Trash2, X, Maximize2, UploadCloud, Sparkles, Loader2 } from 'lucide-react';
 import { Reorder } from 'motion/react';
+import { apiFetch } from '@/src/lib/api';
 
 export function Dashboard() {
   // Feature 1: Advanced Filtering & Search
@@ -33,7 +34,7 @@ export function Dashboard() {
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/insights/upload', {
+      const res = await apiFetch('/api/insights/upload', {
         method: 'POST',
         body: formData,
       });
@@ -55,7 +56,7 @@ export function Dashboard() {
   const handleAnalyzeDB = async () => {
     setIsUploading(true);
     try {
-      const res = await fetch('/api/insights/analyze-db');
+      const res = await apiFetch('/api/insights/analyze-db');
       const data = await res.json();
       if (res.ok) {
         setAiInsights(data);
@@ -72,10 +73,10 @@ export function Dashboard() {
 
   const handleApproveUser = async (userId: string) => {
     try {
-      const res = await fetch(`/api/users/${userId}/approve`, { method: 'PUT' });
+      const res = await apiFetch(`/api/users/${userId}/approve`, { method: 'PUT' });
       if (res.ok) {
         // Refresh users data
-        fetch('/api/users').then(r => r.json()).then(setTransactionsData).catch(console.error);
+        apiFetch('/api/users').then(r => r.json()).then(setTransactionsData).catch(console.error);
       }
     } catch (err) {
       console.error("Failed to approve user", err);
@@ -83,9 +84,9 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    fetch('/api/sales').then(r => r.json()).then(setSalesData).catch(console.error);
-    fetch('/api/projects').then(r => r.json()).then(setProjectData).catch(console.error);
-    fetch('/api/users').then(r => r.json()).then(setTransactionsData).catch(console.error);
+    apiFetch('/api/sales').then(r => r.json()).then(setSalesData).catch(console.error);
+    apiFetch('/api/projects').then(r => r.json()).then(setProjectData).catch(console.error);
+    apiFetch('/api/users').then(r => r.json()).then(setTransactionsData).catch(console.error);
   }, []);
 
   const filteredTransactions = transactionsData.filter(t => {

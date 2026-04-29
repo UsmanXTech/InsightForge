@@ -4,7 +4,9 @@ import google.generativeai as genai
 import os
 import io
 from sqlalchemy.orm import Session
+from app.api.deps import get_current_user
 from app.db.database import get_db
+from app.models.domain import User
 from app.services import db_service
 from app.schemas.data import ChatRequest
 
@@ -13,7 +15,7 @@ router = APIRouter()
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "missing_key"))
 
 @router.post("/chat")
-async def chat_with_data(req: ChatRequest, db: Session = Depends(get_db)):
+async def chat_with_data(req: ChatRequest, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     try:
         summary = db_service.get_db_summary(db)
         
@@ -36,7 +38,7 @@ async def chat_with_data(req: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/analyze-db")
-async def analyze_db_insights(db: Session = Depends(get_db)):
+async def analyze_db_insights(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     try:
         summary = db_service.get_db_summary(db)
         
@@ -57,7 +59,7 @@ async def analyze_db_insights(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/upload")
-async def upload_csv_for_insights(file: UploadFile = File(...)):
+async def upload_csv_for_insights(file: UploadFile = File(...), _: User = Depends(get_current_user)):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="File must be a CSV")
     
